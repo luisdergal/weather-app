@@ -8,19 +8,45 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
+import { fetchLocations, fetchWeatherForecast } from '../api/weather';
 
 import { MapPinIcon } from "react-native-heroicons/solid";
 import { StatusBar } from "expo-status-bar";
+import { debounce } from "lodash";
 import { theme } from "../theme";
 
 export default function HomeScreen() {
   const [showSearch, toggleSearch] = useState(false);
   const [locations, setLocations] = useState([1, 2, 3]);
+  const [weather, setWeather] = useState({});
+
 
   const handleLocation = (loc) => {
-    console.log("location: ", loc);
-  };
+    console.log('location: ',loc);
+    setLocations([]);
+    toggleSearch(false);
+    fetchWeatherForecast({
+      cityName: loc.name,
+      days: '7',
+    }).then(data=>{
+      setWeather(data);
+      console.log('got forecast: ',data);
+    })
+  }
+
+  const handleSearch = search=>{
+    // console.log('value: ',search);
+    if(search && search.length>2)
+      fetchLocations({cityName: search}).then(data=>{
+       console.log('got locations: ',data);
+       setLocations(data);
+      })
+  }
+
+ const handleTextDebounce = useCallback(debounce(handleSearch, 1000), []);
+
+ const {current, location} = weather;
 
   return (
     <View className="flex-1 relative">
@@ -41,6 +67,7 @@ export default function HomeScreen() {
           >
             {showSearch ? (
               <TextInput
+                onChangeText={handleTextDebounce}
                 placeholder="Search City"
                 placeholderTextColor={"lightgray"}
                 className="pl-6 h-10 flex-1 text-base text-white"
@@ -73,7 +100,7 @@ export default function HomeScreen() {
                   >
                     <MapPinIcon size="20" color="gray" />
                     <Text className="text-black text-lg ml-2">
-                      London, United Kingdom
+                      {loc?.name}, {loc?.country}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -84,22 +111,24 @@ export default function HomeScreen() {
           
             {/* forecast section */}
             <View className="mx-4 flex justify-around flex-1 mb-2">
-            <Text className="text-white text-center text-2xl font-bold">London,
-              <Text className="text-lg font-semibold text-gray-300"> United Kingdom
+            <Text className="text-white text-center text-2xl font-bold">{location?.name},
+              <Text className="text-lg font-semibold text-gray-300"> {" "+location?.country}
               </Text>
             </Text>
               {/* weather image*/}
               <View className="flex-row justify-center">
-                <Image source={require('../assets/images/partlycloudy.png')}
-                className="w-52 h-52" />
+              <Image 
+                     source={{uri: 'https:'+current?.condition?.icon}} 
+                    //source={weatherImages[current?.condition?.text || 'other']} 
+                    className="w-52 h-52" />
               </View>
               {/* degree celcius */}
               <View className="space-y-2">
                 <Text className="text-center font-bold text-white text-6xl ml-5">
-                  23&#176;
+                  {current?.temp_c}&#176;
                 </Text>
                 <Text className="text-center font-bold text-white text-xl tracking-widest">
-                  Partly Cloudy
+                  {current?.condition?.text}
                 </Text>
               </View>
               {/* Other Stats */}
