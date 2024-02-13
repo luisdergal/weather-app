@@ -52,8 +52,8 @@ export default function HomeScreen() {
     <View className="flex-1 relative">
       <StatusBar style="dark" />
       <Image
-        blurRadius={70}
-        source={require("../assets/images/bg.png")}
+        blurRadius={60}
+        source={require("../assets/images/bg2.png")}
         className="absolute h-full w-full"
       />
       <SafeAreaView className="flex flex-1">
@@ -111,8 +111,8 @@ export default function HomeScreen() {
           
             {/* forecast section */}
             <View className="mx-4 flex justify-around flex-1 mb-2">
-            <Text className="text-white text-center text-2xl font-bold">{location?.name},
-              <Text className="text-lg font-semibold text-gray-300"> {" "+location?.country}
+            <Text className="text-white text-center text-2xl font-bold">{location?.name}
+              <Text className="text-lg font-semibold text-gray-300"> {location?.country}
               </Text>
             </Text>
               {/* weather image*/}
