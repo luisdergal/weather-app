@@ -1,10 +1,11 @@
 import * as Location from "expo-location";
 
 import { CalendarDaysIcon, MagnifyingGlassIcon, MapPinIcon } from "react-native-heroicons/outline"; // Asegúrate de que los íconos estén correctamente importados
-import { Image, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import { fetchLocations, fetchWeatherForecast } from "../api/weather";
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from "expo-status-bar";
 import { debounce } from "lodash";
 import { theme } from "../theme";
