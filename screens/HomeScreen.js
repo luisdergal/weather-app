@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from "expo-status-bar";
 import { debounce } from "lodash";
 import { theme } from "../theme";
+import { weatherImages } from "../constants";
 
 // Functions to get data from the API
 
@@ -196,96 +197,49 @@ export default function HomeScreen() {
             <CalendarDaysIcon size="22" color="white" />
             <Text className="text-white text-base">Daily Forecast</Text>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View
-              className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-              style={{ backgroundColor: theme.bgWhite(0.15) }}
-            >
-              <Image
-                source={require("../assets/images/heavyrain.png")}
-                className="h-11 w-11"
-              />
-              <Text className="text-white">Monday</Text>
-              <Text className="text-white"> 13&#176;</Text>
-            </View>
-            <View
-              className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-              style={{ backgroundColor: theme.bgWhite(0.15) }}
-            >
-              <Image
-                source={require("../assets/images/heavyrain.png")}
-                className="h-11 w-11"
-              />
-              <Text className="text-white">Monday</Text>
-              <Text className="text-white"> 13&#176;</Text>
-            </View>
-            <View
-              className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-              style={{ backgroundColor: theme.bgWhite(0.15) }}
-            >
-              <Image
-                source={require("../assets/images/heavyrain.png")}
-                className="h-11 w-11"
-              />
-              <Text className="text-white">Monday</Text>
-              <Text className="text-white"> 13&#176;</Text>
-            </View>
-            <View
-              className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-              style={{ backgroundColor: theme.bgWhite(0.15) }}
-            >
-              <Image
-                source={require("../assets/images/heavyrain.png")}
-                className="h-11 w-11"
-              />
-              <Text className="text-white">Monday</Text>
-              <Text className="text-white"> 13&#176;</Text>
-            </View>
-            <View
-              className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-              style={{ backgroundColor: theme.bgWhite(0.15) }}
-            >
-              <Image
-                source={require("../assets/images/heavyrain.png")}
-                className="h-11 w-11"
-              />
-              <Text className="text-white">Monday</Text>
-              <Text className="text-white"> 13&#176;</Text>
-            </View>
-            <View
-              className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-              style={{ backgroundColor: theme.bgWhite(0.15) }}
-            >
-              <Image
-                source={require("../assets/images/heavyrain.png")}
-                className="h-11 w-11"
-              />
-              <Text className="text-white">Monday</Text>
-              <Text className="text-white"> 13&#176;</Text>
-            </View>
-            <View
-              className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-              style={{ backgroundColor: theme.bgWhite(0.15) }}
-            >
-              <Image
-                source={require("../assets/images/heavyrain.png")}
-                className="h-11 w-11"
-              />
-              <Text className="text-white">Monday</Text>
-              <Text className="text-white"> 13&#176;</Text>
-            </View>
-            <View
-              className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-              style={{ backgroundColor: theme.bgWhite(0.15) }}
-            >
-              <Image
-                source={require("../assets/images/heavyrain.png")}
-                className="h-11 w-11"
-              />
-              <Text className="text-white">Monday</Text>
-              <Text className="text-white"> 13&#176;</Text>
-            </View>
-          </ScrollView>
+          <ScrollView 
+  horizontal 
+  showsHorizontalScrollIndicator={false} 
+  contentContainerStyle={{ paddingHorizontal: 16 }}
+>
+  {
+    weather?.forecast?.forecastday?.map((item, index) => {
+      let date = new Date(item.date);
+      let options = { weekday: 'long' };
+      let dayName = date.toLocaleDateString('en-US', options);
+      dayName = dayName.split(',')[0];
+      
+      // Normaliza el texto para que coincida con las claves del objeto weatherImages
+const normalizeConditionText = (text) => {
+  if (!text) return 'other'; // Valor predeterminado si no hay texto
+  return text.trim(); // Eliminamos espacios, no modificamos a minúsculas por posibles problemas con las claves
+};
+
+return (
+  <View
+    key={index}
+    className="flex justify-center items-center w-32 rounded-3xl py-4 space-y-2 mr-4"
+    style={{ backgroundColor: theme.bgWhite(0.15) }}
+  >
+    <Image
+      source={weatherImages[normalizeConditionText(item?.day?.condition?.text)] || weatherImages['other']}
+      className="h-16 w-16"
+      resizeMode="contain"
+    />
+    <Text className="text-white text-lg font-semibold">{dayName}</Text>
+    <Text className="text-white text-lg">
+       {item?.day?.avgtemp_c}&#176;
+    </Text>
+    <Text className="text-white text-sm">
+      {item?.day?.condition?.text}
+    </Text>
+  </View>
+);
+
+    })
+  }
+</ScrollView>
+
         </View>
       </SafeAreaView>
     </View>
