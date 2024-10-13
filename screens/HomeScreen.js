@@ -1,31 +1,72 @@
-import {
-  CalendarDaysIcon,
-  MagnifyingGlassIcon,
-} from "react-native-heroicons/outline";
-import {
-  Image,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import React, { useCallback, useState } from "react";
+import * as Location from "expo-location";
+
+import { CalendarDaysIcon, MagnifyingGlassIcon, MapPinIcon } from "react-native-heroicons/outline"; // Asegúrate de que los íconos estén correctamente importados
+import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
 import { fetchLocations, fetchWeatherForecast } from "../api/weather";
 
-import { MapPinIcon } from "react-native-heroicons/solid";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from "expo-status-bar";
 import { debounce } from "lodash";
 import { theme } from "../theme";
 
+// Functions to get data from the API
+
 export default function HomeScreen() {
   const [showSearch, toggleSearch] = useState(false);
-  const [locations, setLocations] = useState([1, 2, 3]);
+  const [locations, setLocations] = useState([]);
   const [weather, setWeather] = useState({});
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
 
+  // useEffect to get the current location when the app starts
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("Permission to access location was denied");
+        return;
+      }
+
+      // Get current location
+      let location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      setLocation({ latitude, longitude });
+      fetchWeatherForecastByCoords(latitude, longitude);
+      console.log("Location: ", location);
+    };
+
+    requestLocationPermission();  // Function that requests the permissions and obtains the location
+  }, []);
+
+  // Function to obtain weather forecast with coordinates
+  const fetchWeatherForecastByCoords = (latitude, longitude) => {
+    fetchWeatherForecast({ lat: latitude, lon: longitude, days: "7" })
+      .then((data) => {
+        setWeather(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching weather: ", error);
+      });
+  };
+
+  // Handler for city search
+  const handleSearch = (search) => {
+    if (search && search.length > 2) {
+      fetchLocations({ cityName: search })
+        .then((data) => {
+          setLocations(data);
+        })
+        .catch((error) => {
+          console.error("Error fetching locations: ", error);
+        });
+    }
+  };
+
+  const handleTextDebounce = useCallback(debounce(handleSearch, 1000), []);
+
+  // Handle to select a city from the suggestion list
   const handleLocation = (loc) => {
-    console.log("location: ", loc);
     setLocations([]);
     toggleSearch(false);
     fetchWeatherForecast({
@@ -33,22 +74,10 @@ export default function HomeScreen() {
       days: "7",
     }).then((data) => {
       setWeather(data);
-      console.log("got forecast: ", data);
     });
   };
 
-  const handleSearch = (search) => {
-    // console.log('value: ',search);
-    if (search && search.length > 2)
-      fetchLocations({ cityName: search }).then((data) => {
-        console.log("got locations: ", data);
-        setLocations(data);
-      });
-  };
-
-  const handleTextDebounce = useCallback(debounce(handleSearch, 1000), []);
-
-  const { current, location } = weather;
+  const { current, location: weatherLocation } = weather;
 
   return (
     <View className="flex-1 relative">
@@ -59,7 +88,7 @@ export default function HomeScreen() {
         className="absolute h-full w-full"
       />
       <SafeAreaView className="flex flex-1">
-        {/* search section */}
+        {/* Search section */}
         <View style={{ height: "7" }} className="mx-4 relative z-50">
           <View
             className="flex-row justify-end items-center rounded-full"
@@ -84,66 +113,53 @@ export default function HomeScreen() {
               <MagnifyingGlassIcon size="25" color="white" />
             </TouchableOpacity>
           </View>
+
           {locations.length > 0 && showSearch ? (
             <View className="absolute w-full bg-gray-300 top-16 rounded-3xl ">
-              {locations.map((loc, index) => {
-                let showBorder = index + 1 != locations.length;
-                let borderClass = showBorder
-                  ? " border-b-2 border-b-gray-400"
-                  : "";
-                return (
-                  <TouchableOpacity
-                    onPress={() => handleLocation(loc)}
-                    key={index}
-                    className={
-                      "flex-row items-center border-0 p-3 px-4 mb-1 " +
-                      borderClass
-                    }
-                  >
-                    <MapPinIcon size="20" color="gray" />
-                    <Text className="text-black text-lg ml-2">
-                      {loc?.name}
-                      {loc?.name && loc?.country ? ", " : ""}
-                      {loc?.country}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {locations.map((loc, index) => (
+                <TouchableOpacity
+                  onPress={() => handleLocation(loc)}
+                  key={index}
+                  className={
+                    "flex-row items-center border-0 p-3 px-4 mb-1 " +
+                    (index + 1 !== locations.length
+                      ? " border-b-2 border-b-gray-400"
+                      : "")
+                  }
+                >
+                  <MapPinIcon size="20" color="gray" />
+                  <Text className="text-black text-lg ml-2">
+                    {loc?.name}, {loc?.country}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           ) : null}
         </View>
 
-        {/* forecast section */}
+        {/* Forecast section */}
         <View className="mx-4 flex justify-around flex-1 mb-2">
           <Text className="text-white text-center text-2xl font-bold">
-            {location?.name}
-            {location?.name && location?.country ? ", " : ""}
-            <Text className="text-lg font-semibold text-gray-300">
-              {location?.country}
-            </Text>
+            {weatherLocation?.name}, {weatherLocation?.country}
           </Text>
-          {/* weather image*/}
+
+          {/* Climate image*/}
           <View className="flex-row justify-center">
             <Image
               source={{ uri: "https:" + current?.condition?.icon }}
-              //source={weatherImages[current?.condition?.text || 'other']}
               className="w-52 h-52"
             />
           </View>
-          {/* degree celcius */}
-          <View className="space-y-2">
-            <Text className="text-center font-bold text-white text-6xl ml-5">
-              {current?.temp_c !== undefined ? (
-                <Text className="text-center font-bold text-white text-6xl ml-5">
-                  {current.temp_c}&#176;
-                </Text>
-              ) : null}
-            </Text>
-            <Text className="text-center font-bold text-white text-xl tracking-widest">
-              {current?.condition?.text}
-            </Text>
-          </View>
-          {/* Other Stats */}
+
+          {/* Temperature in Celsius */}
+          <Text className="text-center font-bold text-white text-6xl ml-5">
+            {current?.temp_c}&#176;
+          </Text>
+          <Text className="text-center font-bold text-white text-xl tracking-widest">
+            {current?.condition?.text}
+          </Text>
+
+          {/* Other climate data  */}
           <View className="flex-row justify-between mx-4">
             <View className="flex-row space-x-2 items-center">
               <Image
@@ -151,7 +167,7 @@ export default function HomeScreen() {
                 className="h-6 w-6"
               />
               <Text className="text-white font-semibold text-base">
-                12 km/h
+                {current?.wind_kph} km/h
               </Text>
             </View>
             <View className="flex-row space-x-2 items-center">
@@ -159,7 +175,9 @@ export default function HomeScreen() {
                 source={require("../assets/icons/drop.png")}
                 className="h-6 w-6"
               />
-              <Text className="text-white font-semibold text-base">12%</Text>
+              <Text className="text-white font-semibold text-base">
+                {current?.humidity}%
+              </Text>
             </View>
             <View className="flex-row space-x-2 items-center">
               <Image
@@ -167,12 +185,11 @@ export default function HomeScreen() {
                 className="h-6 w-6"
               />
               <Text className="text-white font-semibold text-base">
-                6:06 AM
+                {weatherLocation?.localtime.split(" ")[1]}
               </Text>
             </View>
           </View>
         </View>
-
         {/* Forecast for next days */}
         <View className="mb-2 space-y-3">
           <View className="flex-row items-center mx-5 space-x-2">
